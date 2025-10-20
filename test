@@ -1,0 +1,70 @@
+- hosts: rabbit_nodes
+  become: true
+  vars:
+    arch: "{{ ansible_architecture | default('x86_64') }}"
+  tasks:
+    - name: Ensure CRB is enabled (RHEL 9)
+      command: >
+        subscription-manager repos --enable
+        codeready-builder-for-rhel-9-{{ arch }}-rpms
+      changed_when: "'enabled' in result.stdout"
+      register: result
+      when: ansible_facts['os_family'] == 'RedHat'
+
+    - name: Install EPEL (RHEL 9)
+      dnf:
+        name: "https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm"
+        state: present
+
+    - name: Install base deps
+      dnf:
+        name:
+          - curl
+          - gnupg2
+          - socat
+          - logrotate
+        state: present
+
+    - name: Add RabbitMQ (Erlang + Server) RPM repo file
+      copy:
+        dest: /etc/yum.repos.d/rabbitmq.repo
+        content: |
+          [rabbitmq-erlang]
+          name=rabbitmq-erlang
+          baseurl=https://dl.cloudsmith.io/public/rabbitmq/rabbitmq-erlang/rpm/el/9/$basearch
+          repo_gpgcheck=1
+          gpgcheck=1
+          enabled=1
+          gpgkey=https://dl.cloudsmith.io/public/rabbitmq/rabbitmq-erlang/gpg.2024.key
+                 https://packagecloud.io/rabbitmq/rabbitmq-server/gpgkey
+          metadata_expire=300
+
+          [rabbitmq-server]
+          name=rabbitmq-server
+          baseurl=https://packagecloud.io/rabbitmq/rabbitmq-server/el/9/$basearch
+          repo_gpgcheck=1
+          gpgcheck=1
+          enabled=1
+          gpgkey=https://packagecloud.io/rabbitmq/rabbitmq-server/gpgkey
+          metadata_expire=300
+
+    - name: Make DNF aware of new repos
+      command: dnf makecache
+      args: { warn: false }
+
+    - name: Install Erlang from RabbitMQ repo (zero-dep build)
+      dnf:
+        name: erlang
+        state: present
+
+    - name: Install RabbitMQ server
+      dnf:
+        name: rabbitmq-server
+        state: present
+
+    - name: Enable and start RabbitMQ
+      systemd:
+        name: rabbitmq-server
+        enabled: true
+        state: started
+
