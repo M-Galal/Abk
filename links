@@ -1,4 +1,6 @@
-https://dl.cloudsmith.io/public/rabbitmq/rabbitmq-erlang/rpm/el/9/x86_64/erlang-27.3.4.3-1.el9.x86_64.rpm
-https://dl.cloudsmith.io/public/rabbitmq/rabbitmq-erlang/Ao6RJyz5dDru/gpg.xxNpS5O3h3rt.asc
-https://dl.cloudsmith.io/public/rabbitmq/rabbitmq-server/rpm/el/9/SRPMS/rabbitmq-server-4.1.4-1.el8.src.rpm
-https://dl.cloudsmith.io/public/rabbitmq/rabbitmq-server/eMNixKWQAk8d/gpg.PEjS2t7BL7tu.asc
+https://dl.cloudsmith.io/public/rabbitmq/rabbitmq-server/rpm/el/9/$basearch
+https://dl.cloudsmith.io/public/rabbitmq/rabbitmq-server/gpg.9F4587F226208342.key
+
+name=modern-erlang-el9
+baseurl=https://dl.cloudsmith.io/public/rabbitmq/rabbitmq-erlang/rpm/el/9/$basearch
+gpgkey=https://dl.cloudsmith.io/public/rabbitmq/rabbitmq-erlang/gpg.E495BB49CC4BBE5B.key
