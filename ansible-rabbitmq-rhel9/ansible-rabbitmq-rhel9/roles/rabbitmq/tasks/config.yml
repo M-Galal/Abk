@@ -1,0 +1,59 @@
+---
+- name: Create /etc/rabbitmq
+  file:
+    path: /etc/rabbitmq
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Install Erlang cookie (shared across nodes)
+  copy:
+    dest: /var/lib/rabbitmq/.erlang.cookie
+    content: "{{ rabbitmq_erlang_cookie }}\n"
+    owner: rabbitmq
+    group: rabbitmq
+    mode: "0400"
+  notify: restart rabbitmq
+
+- name: Set systemd override with nodename and FD limit
+  copy:
+    dest: /etc/systemd/system/rabbitmq-server.service.d/override.conf
+    content: |
+      [Service]
+      Environment=RABBITMQ_USE_LONGNAME={{ 'false' if rabbitmq_use_shortnames else 'true' }}
+      Environment=RABBITMQ_NODENAME=rabbit@{{ (ansible_hostname if rabbitmq_use_shortnames else ansible_fqdn).split('.')[0] }}
+      LimitNOFILE={{ rabbitmq_file_descriptors }}
+  notify: restart rabbitmq
+
+- name: Create limits file
+  copy:
+    dest: /etc/security/limits.d/40-rabbitmq.conf
+    content: |
+      rabbitmq soft nofile {{ rabbitmq_file_descriptors }}
+      rabbitmq hard nofile {{ rabbitmq_file_descriptors }}
+
+- name: Deploy rabbitmq.conf
+  template:
+    src: rabbitmq.conf.j2
+    dest: /etc/rabbitmq/rabbitmq.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: restart rabbitmq
+
+- name: Enable management plugin
+  copy:
+    dest: /etc/rabbitmq/enabled_plugins
+    content: |
+      [rabbitmq_management].
+    owner: root
+    group: root
+    mode: "0644"
+  notify: restart rabbitmq
+
+- name: Reload systemd and start service
+  systemd:
+    daemon_reload: true
+    name: "{{ rabbitmq_service_name }}"
+    state: started

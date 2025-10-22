@@ -1,0 +1,37 @@
+---
+- name: Uninstall RabbitMQ completely (CAREFUL)
+  hosts: rabbitmq
+  gather_facts: true
+  become: true
+  tasks:
+    - name: Stop rabbitmq-server
+      service:
+        name: rabbitmq-server
+        state: stopped
+      ignore_errors: true
+
+    - name: Remove RabbitMQ package
+      package:
+        name: rabbitmq-server
+        state: absent
+
+    - name: Remove Erlang packages
+      package:
+        name: "erlang*"
+        state: absent
+
+    - name: Remove repos
+      file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /etc/yum.repos.d/rabbitmq_erlang.repo
+        - /etc/yum.repos.d/rabbitmq_server.repo
+
+    - name: Purge RabbitMQ data and configs
+      file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /var/lib/rabbitmq
+        - /etc/rabbitmq

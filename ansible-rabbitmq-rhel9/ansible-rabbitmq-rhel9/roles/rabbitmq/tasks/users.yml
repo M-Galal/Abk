@@ -1,0 +1,26 @@
+---
+- name: Create vhosts
+  shell: "rabbitmqctl add_vhost '{{ item }}' || true"
+  loop: "{{ rabbitmq_vhosts | default([]) }}"
+  changed_when: false
+
+- name: Create users
+  shell: |
+    rabbitmqctl list_users | awk '{print $1}' | grep -w {{ item.name }} >/dev/null 2>&1       || rabbitmqctl add_user {{ item.name }} '{{ item.password }}'
+    {% if item.tags is defined and item.tags|length > 0 -%}
+    rabbitmqctl set_user_tags {{ item.name }} {{ item.tags }}
+    {%- endif %}
+  loop: "{{ rabbitmq_users | default([]) }}"
+  changed_when: false
+
+- name: Set permissions for users on vhosts
+  shell: >
+    rabbitmqctl set_permissions -p {{ item.1.vhost }}
+    {{ item.0.name }}
+    "{{ item.1.configure_priv }}"
+    "{{ item.1.write_priv }}"
+    "{{ item.1.read_priv }}"
+  with_subelements:
+    - "{{ rabbitmq_users | default([]) }}"
+    - vhost_permissions
+  changed_when: false

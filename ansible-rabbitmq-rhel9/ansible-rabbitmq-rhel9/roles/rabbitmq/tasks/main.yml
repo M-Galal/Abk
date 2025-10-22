@@ -1,0 +1,20 @@
+---
+- name: Include install tasks
+  import_tasks: install.yml
+  tags: [install]
+
+- name: Include config tasks
+  import_tasks: config.yml
+  tags: [config]
+
+- name: Include firewall tasks
+  import_tasks: firewall.yml
+  tags: [firewall]
+
+- name: Include cluster tasks
+  import_tasks: cluster.yml
+  tags: [cluster]
+
+- name: Include users/vhosts tasks
+  import_tasks: users.yml
+  tags: [users]

@@ -1,0 +1,8 @@
+---
+- name: Install & Configure RabbitMQ Cluster (RHEL 9)
+  hosts: rabbitmq
+  gather_facts: true
+  become: true
+
+  roles:
+    - rabbitmq

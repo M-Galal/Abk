@@ -1,0 +1,28 @@
+## RabbitMQ main configuration
+loopback_users.guest = false
+listeners.tcp.default = 5672
+management.tcp.port = {{ rabbitmq_management_port }}
+management.load_definitions = none
+
+{% if rabbitmq_enable_tls %}
+listeners.ssl.default = 5671
+ssl_options.cacertfile = {{ rabbitmq_tls_cacertfile }}
+ssl_options.certfile   = {{ rabbitmq_tls_certfile }}
+ssl_options.keyfile    = {{ rabbitmq_tls_keyfile }}
+ssl_options.verify      = verify_peer
+ssl_options.fail_if_no_peer_cert = true
+{% endif %}
+
+# Cluster formation (static)
+cluster_formation.peer_discovery_backend = classic_config
+cluster_formation.classic_config.nodes.1 = {{ rabbitmq_node_names | join(',') }}
+
+# Networking
+loopback_users.guest = false
+listeners.tcp = {{ rabbitmq_listen_ip }}:5672
+management.listener.port = {{ rabbitmq_management_port }}
+
+# Tuning
+vm_memory_high_watermark.relative = 0.6
+disk_free_limit.relative = 1.0
+queue_master_locator = min-masters

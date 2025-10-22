@@ -1,0 +1,79 @@
+# === General settings ===
+rabbitmq_version: "3.13.*"           # Allow minor updates; set exact if you want pinning
+rabbitmq_use_shortnames: true        # Use short hostnames for nodename
+rabbitmq_service_name: rabbitmq-server
+rabbitmq_cluster_name: "rmq-cluster"
+
+# Choose who is master (disc node to cluster against). We take the first host in the group with is_rabbit_master=true
+rabbitmq_master_selector: >-
+  {{ (groups['rabbitmq'] | map('extract', hostvars, 'is_rabbit_master') | list) 
+      | map('default', False) 
+  }}
+
+# You can also set `is_rabbit_master: true` per-host in inventory.
+
+# === Repositories (defaults follow current RabbitMQ guidance; override if you mirror) ===
+# Cloudsmith repos (preferred)
+rabbitmq_erlang_repo_name: "rabbitmq_erlang"
+rabbitmq_erlang_repo_baseurl: "https://rpm.cloudsmith.io/rabbitmq/erlang/el/9/$basearch"
+rabbitmq_erlang_repo_gpgkey: |
+  https://rpm.cloudsmith.io/rabbitmq/erlang/gpg.9B8D2F2D.key
+  https://rpm.cloudsmith.io/rabbitmq/erlang/cfg/job/bootstrap/gpg.9B8D2F2D.key
+
+rabbitmq_server_repo_name: "rabbitmq_server"
+rabbitmq_server_repo_baseurl: "https://rpm.cloudsmith.io/rabbitmq/rabbitmq-server/el/9/$basearch"
+rabbitmq_server_repo_gpgkey: |
+  https://rpm.cloudsmith.io/rabbitmq/rabbitmq-server/gpg.9B8D2F2D.key
+  https://rpm.cloudsmith.io/rabbitmq/rabbitmq-server/cfg/job/bootstrap/gpg.9B8D2F2D.key
+
+# === Ports ===
+rabbitmq_ports:
+  - 5672     # AMQP
+  - 15672    # HTTP management UI
+  - 25672    # Inter-node & CLI
+  - 4369     # EPMD
+  - 35672-35682  # Erlang distribution (dynamic)
+
+rabbitmq_management_port: 15672
+rabbitmq_listen_ip: "0.0.0.0"
+
+# === Cookie (shared secret across nodes) ===
+# *** CHANGE THIS and store in Ansible Vault in real environments ***
+rabbitmq_erlang_cookie: "CHANGEME_SUPER_SECRET_COOKIE_32CHARS"
+
+# === Users & vhosts ===
+rabbitmq_create_default_user: true
+rabbitmq_default_user: admin
+rabbitmq_default_pass: "StrongP@ssw0rd"  # Put in Vault!
+rabbitmq_vhosts:
+  - "/"
+  - "payments"
+rabbitmq_users:
+  - name: "{{ rabbitmq_default_user }}"
+    password: "{{ rabbitmq_default_pass }}"
+    tags: "administrator"
+    vhost_permissions:
+      - vhost: "/"
+        configure_priv: ".*"
+        write_priv: ".*"
+        read_priv: ".*"
+      - vhost: "payments"
+        configure_priv: ".*"
+        write_priv: ".*"
+        read_priv: ".*"
+
+# === Policies (optional) ===
+rabbitmq_set_ha_policy: false        # Classic mirrored queues (legacy). Prefer quorum queues nowadays.
+rabbitmq_ha_policy_name: "ha-all"
+rabbitmq_ha_policy_pattern: ".*"
+rabbitmq_ha_policy_definition: '{"ha-mode":"all","ha-sync-mode":"automatic"}'
+rabbitmq_ha_policy_priority: 0
+
+# === TLS (optional) ===
+rabbitmq_enable_tls: false
+rabbitmq_tls_cacertfile: "/etc/rabbitmq/ssl/ca.pem"
+rabbitmq_tls_certfile: "/etc/rabbitmq/ssl/cert.pem"
+rabbitmq_tls_keyfile: "/etc/rabbitmq/ssl/key.pem"
+
+# === System tuning ===
+rabbitmq_file_descriptors: 65536

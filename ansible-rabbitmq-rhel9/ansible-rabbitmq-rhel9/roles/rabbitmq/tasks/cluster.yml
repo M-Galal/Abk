@@ -1,0 +1,55 @@
+---
+- name: Identify master node
+  set_fact:
+    rabbitmq_master: "{{ (groups['rabbitmq'] | select('match', '.*') | list) | select('match', '.*') | map('extract', hostvars, 'is_rabbit_master') | list | count > 0
+      | ternary((groups['rabbitmq'] | select('equalto', groups['rabbitmq'] | select('match','.*') | list | first) | list), []) }}"
+  when: false  # placeholder to keep the variable in scope (not used)
+
+# Compute master & node lists
+- name: Compute master hostname
+  set_fact:
+    rabbitmq_master_name: "{{ (groups['rabbitmq'] | select('match', '.*') | list | select('match','.*') | list | map('extract', hostvars) | list | selectattr('is_rabbit_master','defined') | selectattr('is_rabbit_master') | list | first | default({}))['inventory_hostname'] | default(groups['rabbitmq'][0]) }}"
+
+- name: Build list of cluster node names (short or long) for template
+  set_fact:
+    rabbitmq_node_names: >-
+      {{ groups['rabbitmq']
+         | map('extract', hostvars, 'ansible_hostname')
+         | map('regex_replace', '^(.*)$', 'rabbit@\1')
+         | list }}
+
+- name: Ensure service is started before clustering
+  service:
+    name: "{{ rabbitmq_service_name }}"
+    state: started
+
+# Join non-master nodes to the master
+- name: Join cluster (non-master nodes)
+  shell: |
+    rabbitmqctl stop_app
+    rabbitmqctl reset
+    rabbitmqctl join_cluster rabbit@{{ hostvars[rabbitmq_master_name].ansible_hostname }}
+    rabbitmqctl start_app
+  args:
+    executable: /bin/bash
+  when: inventory_hostname != rabbitmq_master_name
+  register: join_result
+  changed_when: "'already_member' not in join_result.stdout"
+  retries: 3
+  delay: 5
+  until: join_result.rc == 0
+
+- name: Set cluster name (master only)
+  shell: rabbitmqctl set_cluster_name {{ rabbitmq_cluster_name }}
+  when: inventory_hostname == rabbitmq_master_name
+  changed_when: false
+
+# Optional classic mirrored-queues policy (legacy)
+- name: Set HA policy (optional legacy)
+  shell: >
+    rabbitmqctl set_policy -p / {{ rabbitmq_ha_policy_name }}
+    "{{ rabbitmq_ha_policy_pattern }}"
+    '{{ rabbitmq_ha_policy_definition | replace("'","\'") }}'
+    --priority {{ rabbitmq_ha_policy_priority }}
+  when: rabbitmq_set_ha_policy | bool
+  changed_when: false
