@@ -1,0 +1,5 @@
+[redis]
+name=Redis RPM Repository
+baseurl=https://download.redis.io/releases/rpm/redis-el9-x86_64/
+enabled=1
+gpgcheck=0

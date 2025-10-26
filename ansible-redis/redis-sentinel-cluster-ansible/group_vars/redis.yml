@@ -1,0 +1,27 @@
+redis_port: 6379
+sentinel_port: 26379
+
+redis_requirepass: "Str0ngRedisPass!"
+redis_masterauth: "Str0ngRedisPass!"
+sentinel_auth_pass: "Str0ngRedisPass!"
+
+redis_master_host: "redis1"
+redis_quorum: 2
+failover_timeout_ms: 10000
+
+redis_conf_path: /etc/redis.conf
+sentinel_conf_path: /etc/redis-sentinel.conf
+redis_dir: /var/lib/redis
+redis_log: /var/log/redis.log
+sentinel_log: /var/log/redis-sentinel.log
+redis_user: redis
+redis_group: redis
+
+overcommit_memory: 1
+transparent_hugepage: "never"
+
+redis_service_name: redis
+sentinel_service_name: redis-sentinel
+
+allowed_redis_clients_cidr: "10.0.0.0/24"
+allowed_cluster_cidr: "10.0.0.0/24"

@@ -1,0 +1,12 @@
+---
+- ansible.posix.selinux:
+    policy: targeted
+    state: enforcing
+
+- community.general.sefcontext:
+    target: "{{ redis_dir }}(/.*)?"
+    setype: var_lib_t
+    state: present
+
+- command: "restorecon -Rv {{ redis_dir }}"
+  changed_when: false

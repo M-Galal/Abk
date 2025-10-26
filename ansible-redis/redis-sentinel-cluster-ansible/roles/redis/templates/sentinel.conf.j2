@@ -1,0 +1,6 @@
+port {{ sentinel_port }}
+sentinel monitor mymaster {{ hostvars[redis_master_host].ansible_host | default(redis_master_host) }} {{ redis_port }} {{ redis_quorum }}
+sentinel auth-pass mymaster {{ sentinel_auth_pass }}
+sentinel down-after-milliseconds mymaster 5000
+sentinel failover-timeout mymaster {{ failover_timeout_ms }}
+sentinel parallel-syncs mymaster 1

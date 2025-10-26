@@ -1,0 +1,15 @@
+---
+- systemd:
+    daemon_reload: yes
+
+- systemd:
+    name: "{{ redis_service_name }}"
+    state: started
+    enabled: yes
+  when: role_mode == "server"
+
+- systemd:
+    name: "{{ sentinel_service_name }}"
+    state: started
+    enabled: yes
+  when: role_mode == "sentinel"

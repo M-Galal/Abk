@@ -1,0 +1,52 @@
+---
+- copy:
+    src: redis.repo
+    dest: /etc/yum.repos.d/redis.repo
+
+- dnf:
+    name: redis
+    state: present
+  when: role_mode == "server" or (deploy_redis | default(false) | bool)
+
+- dnf:
+    name: redis-sentinel
+    state: present
+  register: sentinel_pkg_result
+  failed_when: false
+  changed_when: sentinel_pkg_result.changed | default(false)
+
+- group:
+    name: "{{ redis_group }}"
+    state: present
+
+- user:
+    name: "{{ redis_user }}"
+    group: "{{ redis_group }}"
+    create_home: no
+    shell: /sbin/nologin
+    system: yes
+
+- file:
+    path: "{{ redis_dir }}"
+    state: directory
+    owner: "{{ redis_user }}"
+    group: "{{ redis_group }}"
+
+- sysctl:
+    name: vm.overcommit_memory
+    value: "{{ overcommit_memory }}"
+    state: present
+    reload: yes
+
+- command: grubby --update-kernel=ALL --args="transparent_hugepage={{ transparent_hugepage }}"
+  register: grubby_result
+  changed_when: "'Updated' in grubby_result.stdout or 'Updated' in grubby_result.stderr"
+  failed_when: false
+
+- shell: |
+    echo never > /sys/kernel/mm/transparent_hugepage/enabled
+    echo never > /sys/kernel/mm/transparent_hugepage/defrag
+  args:
+    executable: /bin/bash
+  changed_when: false
+  failed_when: false

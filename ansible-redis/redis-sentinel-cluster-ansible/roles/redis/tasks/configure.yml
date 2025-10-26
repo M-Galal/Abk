@@ -1,0 +1,13 @@
+---
+- set_fact:
+    is_master: "{{ (inventory_hostname == redis_master_host) | bool }}"
+
+- template:
+    src: redis.conf.j2
+    dest: "{{ redis_conf_path }}"
+  when: role_mode == "server" or (deploy_redis | default(false) | bool)
+
+- template:
+    src: sentinel.conf.j2
+    dest: "{{ sentinel_conf_path }}"
+  when: role_mode == "sentinel" or (deploy_sentinel | default(false) | bool)

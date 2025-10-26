@@ -1,0 +1,11 @@
+bind 0.0.0.0
+port {{ redis_port }}
+requirepass {{ redis_requirepass }}
+masterauth {{ redis_masterauth }}
+dir {{ redis_dir }}
+logfile {{ redis_log }}
+{% if is_master %}
+replica-read-only no
+{% else %}
+replicaof {{ hostvars[redis_master_host].ansible_host | default(redis_master_host) }} {{ redis_port }}
+{% endif %}

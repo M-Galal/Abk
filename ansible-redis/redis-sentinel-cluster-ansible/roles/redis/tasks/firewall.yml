@@ -1,0 +1,28 @@
+---
+- dnf:
+    name: firewalld
+    state: present
+
+- systemd:
+    name: firewalld
+    state: started
+    enabled: yes
+
+- ansible.posix.firewalld:
+    port: "{{ redis_port }}/tcp"
+    source: "{{ allowed_redis_clients_cidr }}"
+    permanent: yes
+    state: enabled
+    immediate: yes
+  when: role_mode == "server"
+
+- ansible.posix.firewalld:
+    port: "{{ sentinel_port }}/tcp"
+    source: "{{ allowed_cluster_cidr }}"
+    permanent: yes
+    state: enabled
+    immediate: yes
+  when: role_mode == "sentinel"
+
+- ansible.posix.firewalld:
+    state: reloaded
