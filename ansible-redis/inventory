@@ -1,0 +1,7 @@
+[redis]
+SYSVMTCRXRDSM1 ansible_host=SYSVMTCRXRDSM1 role=master
+SYSVMTCRXRDSM2 ansible_host=SYSVMTCRXRDSM2 role=replica
+SYSVMTCRXRDSM3 ansible_host=SYSVMTCRXRDSM3 role=replica
+SYSVMTCRXRDSR4 ansible_host=SYSVMTCRXRDSR4 role=replica
+SYSVMTCRXRDSR5 ansible_host=SYSVMTCRXRDSR5 role=replica
+SYSVMTCRXRDSR6 ansible_host=SYSVMTCRXRDSR6 role=replica

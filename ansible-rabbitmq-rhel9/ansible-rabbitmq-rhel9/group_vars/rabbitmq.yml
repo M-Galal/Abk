@@ -1,5 +1,5 @@
 # === General settings ===
-rabbitmq_version: "3.13.*"           # Allow minor updates; set exact if you want pinning
+rabbitmq_version: "4.1.4"           # Allow minor updates; set exact if you want pinning
 rabbitmq_use_shortnames: true        # Use short hostnames for nodename
 rabbitmq_service_name: rabbitmq-server
 rabbitmq_cluster_name: "rmq-cluster"
@@ -9,30 +9,31 @@ rabbitmq_master_selector: >-
   {{ (groups['rabbitmq'] | map('extract', hostvars, 'is_rabbit_master') | list) 
       | map('default', False) 
   }}
-
+rabbitmq_node_names:
+  - rabbit@rabbit-master
+  - rabbit@rabbit-node01
+  - rabbit@rabbit-node02
 # You can also set `is_rabbit_master: true` per-host in inventory.
 
 # === Repositories (defaults follow current RabbitMQ guidance; override if you mirror) ===
 # Cloudsmith repos (preferred)
 rabbitmq_erlang_repo_name: "rabbitmq_erlang"
-rabbitmq_erlang_repo_baseurl: "https://rpm.cloudsmith.io/rabbitmq/erlang/el/9/$basearch"
+rabbitmq_erlang_repo_baseurl: "https://packagecloud.io/rabbitmq/erlang/packages/el/9/$basearch"
 rabbitmq_erlang_repo_gpgkey: |
-  https://rpm.cloudsmith.io/rabbitmq/erlang/gpg.9B8D2F2D.key
-  https://rpm.cloudsmith.io/rabbitmq/erlang/cfg/job/bootstrap/gpg.9B8D2F2D.key
+  https://packagecloud.io/rabbitmq/erlang/gpgkey
 
 rabbitmq_server_repo_name: "rabbitmq_server"
-rabbitmq_server_repo_baseurl: "https://rpm.cloudsmith.io/rabbitmq/rabbitmq-server/el/9/$basearch"
+rabbitmq_server_repo_baseurl: "https://packagecloud.io/rabbitmq/rabbitmq-server/packages/el/9/$basearch"
 rabbitmq_server_repo_gpgkey: |
-  https://rpm.cloudsmith.io/rabbitmq/rabbitmq-server/gpg.9B8D2F2D.key
-  https://rpm.cloudsmith.io/rabbitmq/rabbitmq-server/cfg/job/bootstrap/gpg.9B8D2F2D.key
+  https://packagecloud.io/rabbitmq/rabbitmq-server/gpgkey
 
 # === Ports ===
 rabbitmq_ports:
-  - 5672     # AMQP
-  - 15672    # HTTP management UI
-  - 25672    # Inter-node & CLI
-  - 4369     # EPMD
-  - 35672-35682  # Erlang distribution (dynamic)
+  - 5672/tcp     # AMQP
+  - 15672/tcp    # HTTP management UI
+  - 25672/tcp    # Inter-node & CLI
+  - 4369/tcp     # EPMD
+  - 35672-35682/tcp  # Erlang distribution (dynamic)
 
 rabbitmq_management_port: 15672
 rabbitmq_listen_ip: "0.0.0.0"

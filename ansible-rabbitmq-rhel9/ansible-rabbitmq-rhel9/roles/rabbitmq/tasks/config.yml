@@ -15,10 +15,16 @@
     group: rabbitmq
     mode: "0400"
   notify: restart rabbitmq
-
+- name: Ensure Systemd drop-in dir exists for rabbitmq override
+  ansible.builtin.file:
+    path: /etc/systemd/system/rabbitmq-server.service.d 
+    state: directory
+    owner: root
+    group: root
+    mode: '0775'
 - name: Set systemd override with nodename and FD limit
   copy:
-    dest: /etc/systemd/system/rabbitmq-server.service.d/override.conf
+    dest:  /etc/systemd/system/rabbitmq-server.service.d/override.conf
     content: |
       [Service]
       Environment=RABBITMQ_USE_LONGNAME={{ 'false' if rabbitmq_use_shortnames else 'true' }}

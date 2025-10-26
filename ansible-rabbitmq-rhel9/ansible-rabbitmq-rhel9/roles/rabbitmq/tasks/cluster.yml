@@ -49,7 +49,7 @@
   shell: >
     rabbitmqctl set_policy -p / {{ rabbitmq_ha_policy_name }}
     "{{ rabbitmq_ha_policy_pattern }}"
-    '{{ rabbitmq_ha_policy_definition | replace("'","\'") }}'
+    '{{ rabbitmq_ha_policy_definition | replace("'","'") }}'
     --priority {{ rabbitmq_ha_policy_priority }}
   when: rabbitmq_set_ha_policy | bool
   changed_when: false

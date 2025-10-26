@@ -9,32 +9,26 @@
       - rsync
     state: present
 
-- name: Add Erlang repo (Cloudsmith)
-  yum_repository:
-    name: "{{ rabbitmq_erlang_repo_name }}"
-    description: "Erlang (Cloudsmith) for RabbitMQ"
-    baseurl: "{{ rabbitmq_erlang_repo_baseurl }}"
-    enabled: yes
-    gpgcheck: yes
-    gpgkey: "{{ rabbitmq_erlang_repo_gpgkey }}"
-    module_hotfixes: yes
-
-- name: Add RabbitMQ server repo (Cloudsmith)
-  yum_repository:
-    name: "{{ rabbitmq_server_repo_name }}"
-    description: "RabbitMQ Server (Cloudsmith)"
-    baseurl: "{{ rabbitmq_server_repo_baseurl }}"
-    enabled: yes
-    gpgcheck: yes
-    gpgkey: "{{ rabbitmq_server_repo_gpgkey }}"
-    module_hotfixes: yes
-
-- name: Install Erlang and RabbitMQ
-  package:
-    name:
-      - erlang
-      - rabbitmq-server-{{ rabbitmq_version }}
+- name: Download Package Erlang 
+  get_url:
+    url: https://packagecloud.io/rabbitmq/erlang/packages/el/9/erlang-26.2.5.4-1.el9.x86_64.rpm/download.rpm?distro_version_id=240 
+    dest: /tmp/erlang-26.2.5.4-1.el9.x86_64.rpm
+    mode: '0644'
+- name: Install Package Erlang
+  yum:
+    name: /tmp/erlang-26.2.5.4-1.el9.x86_64.rpm
     state: present
+    disable_gpg_check: yes
+- name: Download Package RabbitMQ Server 
+  get_url:
+    url: https://packagecloud.io/rabbitmq/rabbitmq-server/packages/el/9/rabbitmq-server-3.13.7-1.el8.noarch.rpm/download.rpm?distro_version_id=240 
+    dest: /tmp/rabbitmq-server-3.13.7-1.el8.noarch.rpm
+    mode: '0644'
+- name: Install Package RabbitMQ Server 
+  yum:
+    name: /tmp/rabbitmq-server-3.13.7-1.el8.noarch.rpm
+    state: present
+    disable_gpg_check: yes
 
 - name: Enable rabbitmq-server service
   service:
