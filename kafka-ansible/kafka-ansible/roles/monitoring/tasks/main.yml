@@ -1,0 +1,70 @@
+---
+- name: Install node_exporter (download prebuilt)
+  get_url:
+    url: "https://github.com/prometheus/node_exporter/releases/latest/download/node_exporter-{{ ansible_architecture }}-linux.tar.gz"
+    dest: /tmp/node_exporter.tar.gz
+    mode: "0644"
+  ignore_errors: true
+
+- name: Create node_exporter user
+  user:
+    name: node_exporter
+    system: yes
+    shell: /sbin/nologin
+
+- name: Extract node_exporter
+  unarchive:
+    src: /tmp/node_exporter.tar.gz
+    dest: /opt/node_exporter
+    remote_src: yes
+    extra_opts: [--strip-components=1]
+  ignore_errors: true
+
+- name: Install node_exporter systemd unit
+  copy:
+    dest: /etc/systemd/system/node_exporter.service
+    content: |
+      [Unit]
+      Description=Prometheus Node Exporter
+      After=network.target
+
+      [Service]
+      User=node_exporter
+      ExecStart=/opt/node_exporter/node_exporter
+      Restart=on-failure
+
+      [Install]
+      WantedBy=multi-user.target
+    mode: "0644"
+
+- name: Ensure node_exporter enabled and started
+  systemd:
+    name: node_exporter
+    enabled: yes
+    state: started
+
+- name: Place JMX exporter jar and config
+  copy:
+    src: jmx_prometheus_javaagent.jar
+    dest: "{{ install_dir }}/jmx_exporter/jmx_prometheus_javaagent.jar"
+    mode: "0755"
+    owner: root
+  ignore_errors: yes
+
+- name: Create jmx exporter config
+  copy:
+    dest: "{{ install_dir }}/jmx_exporter/kafka-jmx.yaml"
+    content: |
+      lowercaseOutputName: true
+      rules:
+        - pattern: ".*"
+  mode: "0644"
+
+- name: Add JMX agent to Kafka startup (env file)
+  lineinfile:
+    path: "{{ install_dir }}/kafka/bin/kafka-server-start.sh"
+    regexp: '(^#?JMX_AGENT=)'
+    line: 'JMX_AGENT="-javaagent:{{ install_dir }}/jmx_exporter/jmx_prometheus_javaagent.jar=7071:{{ install_dir }}/jmx_exporter/kafka-jmx.yaml"'
+    insertafter: BOF
+  when: ansible_virtualization_type != "docker"
+  ignore_errors: yes

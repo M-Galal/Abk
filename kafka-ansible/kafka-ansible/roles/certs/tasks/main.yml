@@ -1,0 +1,66 @@
+---
+- name: Create local certs build dir (control node)
+  delegate_to: localhost
+  run_once: true
+  file:
+    path: "./build-certs"
+    state: directory
+    mode: "0755"
+
+- name: Generate CA key and cert (control node)
+  delegate_to: localhost
+  run_once: true
+  shell: |
+    set -e
+    cd ./build-certs
+    if [ ! -f ca.key ]; then
+      openssl genrsa -out ca.key 4096
+      openssl req -x509 -new -nodes -key ca.key -subj "/CN=Kafka-Cluster-CA" -days 3650 -out ca.crt
+    fi
+  args:
+    creates: ./build-certs/ca.crt
+
+- name: Generate and sign server cert for {{ inventory_hostname }} (control node)
+  delegate_to: localhost
+  run_once: false
+  shell: |
+    set -e
+    cd ./build-certs
+    CN="{{ inventory_hostname }}"
+    if [ ! -f "${CN}.key" ]; then
+      openssl genrsa -out ${CN}.key 2048
+      openssl req -new -key ${CN}.key -subj "/CN=${CN}" -out ${CN}.csr
+      openssl x509 -req -in ${CN}.csr -CA ca.crt -CAkey ca.key -CAcreateserial -out ${CN}.crt -days 365
+    fi
+  args:
+    creates: "./build-certs/{{ inventory_hostname }}.crt"
+
+- name: Fetch certs to controller and distribute to targets
+  delegate_to: localhost
+  run_once: false
+  fetch:
+    src: "./build-certs/{{ inventory_hostname }}.crt"
+    dest: "./fetched/{{ inventory_hostname }}.crt"
+    flat: yes
+  ignore_errors: yes
+
+- name: Copy CA and host certs to remote node
+  copy:
+    src: "./build-certs/{{ inventory_hostname }}.crt"
+    dest: "{{ install_dir }}/certs/{{ inventory_hostname }}.crt"
+    owner: root
+    mode: "0644"
+
+- name: Copy host key to remote node
+  copy:
+    src: "./build-certs/{{ inventory_hostname }}.key"
+    dest: "{{ install_dir }}/certs/{{ inventory_hostname }}.key"
+    owner: root
+    mode: "0600"
+
+- name: Copy CA cert to remote node
+  copy:
+    src: "./build-certs/ca.crt"
+    dest: "{{ install_dir }}/certs/ca.crt"
+    owner: root
+    mode: "0644"

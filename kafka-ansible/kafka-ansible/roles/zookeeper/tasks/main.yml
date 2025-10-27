@@ -1,0 +1,69 @@
+---
+- name: Download ZooKeeper binaries
+  get_url:
+    url: "https://downloads.apache.org/zookeeper/zookeeper-{{ zookeeper_version }}/apache-zookeeper-{{ zookeeper_version }}-bin.tar.gz"
+    dest: "/tmp/zookeeper-{{ zookeeper_version }}.tar.gz"
+    mode: "0644"
+  register: zk_dl
+  until: zk_dl is succeeded
+  retries: 3
+  delay: 10
+
+- name: Extract ZooKeeper
+  unarchive:
+    src: "/tmp/zookeeper-{{ zookeeper_version }}.tar.gz"
+    dest: "{{ install_dir }}/zookeeper"
+    remote_src: yes
+    extra_opts: [--strip-components=1]
+
+- name: Create data directory
+  file:
+    path: /var/lib/zookeeper
+    state: directory
+    owner: "{{ zookeeper_user }}"
+    group: "{{ zookeeper_user }}"
+    mode: "0755"
+
+- name: Create zoo.cfg
+  copy:
+    dest: "{{ install_dir }}/zookeeper/conf/zoo.cfg"
+    content: |
+      tickTime=2000
+      dataDir=/var/lib/zookeeper
+      clientPort=2181
+      secureClientPort=2281
+      initLimit=10
+      syncLimit=5
+{% for host in groups['zk_nodes'] %}
+      server.{{ loop.index }}={{ hostvars[host]['ansible_host'] }}:2888:3888
+{% endfor %}
+  owner: "{{ zookeeper_user }}"
+  mode: "0644"
+
+- name: Write myid file
+  copy:
+    dest: /var/lib/zookeeper/myid
+    content: "{{ groups['zk_nodes'].index(inventory_hostname) + 1 }}
+"
+    owner: "{{ zookeeper_user }}"
+    mode: "0644"
+
+- name: Install ZooKeeper systemd unit
+  template:
+    src: zookeeper.service.j2
+    dest: /etc/systemd/system/zookeeper.service
+    mode: "0644"
+  notify: restart zookeeper
+
+- name: Ensure zookeeper service enabled and started
+  systemd:
+    name: zookeeper
+    enabled: yes
+    state: started
+
+- name: Ensure TLS cert and key exist in zookeeper conf location
+  file:
+    path: "{{ install_dir }}/certs"
+    state: directory
+    owner: root
+    mode: "0755"

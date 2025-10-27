@@ -1,0 +1,35 @@
+---
+- name: Ensure required packages are installed
+  package:
+    name:
+      - "{{ jdk_package }}"
+      - wget
+      - tar
+      - unzip
+      - openssl
+    state: present
+
+- name: Ensure kafka user exists
+  user:
+    name: "{{ kafka_user }}"
+    system: yes
+    create_home: no
+
+- name: Ensure zookeeper user exists
+  user:
+    name: "{{ zookeeper_user }}"
+    system: yes
+    create_home: no
+
+- name: Create install directories
+  file:
+    path: "{{ install_dir }}/{{ item }}"
+    state: directory
+    owner: "{{ kafka_user }}"
+    group: "{{ kafka_user }}"
+    mode: "0755"
+  loop:
+    - kafka
+    - zookeeper
+    - certs
+    - jmx_exporter
