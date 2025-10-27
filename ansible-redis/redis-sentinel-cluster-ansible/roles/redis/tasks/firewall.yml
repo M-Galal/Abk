@@ -51,6 +51,6 @@
 #####################################################################
 
 - name: Reload firewalld to apply rules
-  ansible.posix.firewalld:
-    state: reloaded
+  ansible.builtin.command: firewall-cmd --reload
+  changed_when: false 
 
