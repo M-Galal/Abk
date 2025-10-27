@@ -5,7 +5,7 @@ redis_requirepass: "Str0ngRedisPass!"
 redis_masterauth: "Str0ngRedisPass!"
 sentinel_auth_pass: "Str0ngRedisPass!"
 
-redis_master_host: "redis1"
+redis_master_host: "SYSVMTCRXRDSM1"
 redis_quorum: 2
 failover_timeout_ms: 10000
 
@@ -24,4 +24,4 @@ redis_service_name: redis
 sentinel_service_name: redis-sentinel
 
 allowed_redis_clients_cidr: "10.0.0.0/24"
-allowed_cluster_cidr: "10.0.0.0/24"
+allowed_cluster_cidr: "10.1.186.0/24"
