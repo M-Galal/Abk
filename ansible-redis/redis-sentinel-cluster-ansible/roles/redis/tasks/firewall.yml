@@ -1,28 +1,56 @@
 ---
-- dnf:
+- name: Ensure firewalld is installed
+  ansible.builtin.dnf:
     name: firewalld
     state: present
 
-- systemd:
+- name: Ensure firewalld is enabled and running
+  ansible.builtin.systemd:
     name: firewalld
     state: started
     enabled: yes
 
-- ansible.posix.firewalld:
-    port: "{{ redis_port }}/tcp"
-    source: "{{ allowed_redis_clients_cidr }}"
+#####################################################################
+# Redis nodes: open 6379 but ONLY for allowed_redis_clients_cidr
+# and allowed_cluster_cidr
+#####################################################################
+
+- name: Allow application/client access to Redis TCP {{ redis_port }} from allowed_redis_clients_cidr
+  ansible.posix.firewalld:
+    rich_rule: 'rule family="ipv4" source address="{{ allowed_redis_clients_cidr }}" port port="{{ redis_port }}" protocol="tcp" accept'
     permanent: yes
     state: enabled
     immediate: yes
-  when: role_mode == "server"
+  when:
+    - role_mode == "server" or (deploy_redis | default(false) | bool)
 
-- ansible.posix.firewalld:
-    port: "{{ sentinel_port }}/tcp"
-    source: "{{ allowed_cluster_cidr }}"
+- name: Allow internal cluster access to Redis TCP {{ redis_port }} from allowed_cluster_cidr
+  ansible.posix.firewalld:
+    rich_rule: 'rule family="ipv4" source address="{{ allowed_cluster_cidr }}" port port="{{ redis_port }}" protocol="tcp" accept'
     permanent: yes
     state: enabled
     immediate: yes
-  when: role_mode == "sentinel"
+  when:
+    - role_mode == "server" or (deploy_redis | default(false) | bool)
 
-- ansible.posix.firewalld:
+#####################################################################
+# Sentinel nodes: open 26379 but ONLY for cluster CIDR
+#####################################################################
+
+- name: Allow Sentinel TCP {{ sentinel_port }} from internal cluster CIDR
+  ansible.posix.firewalld:
+    rich_rule: 'rule family="ipv4" source address="{{ allowed_cluster_cidr }}" port port="{{ sentinel_port }}" protocol="tcp" accept'
+    permanent: yes
+    state: enabled
+    immediate: yes
+  when:
+    - role_mode == "sentinel" or (deploy_sentinel | default(false) | bool)
+
+#####################################################################
+# Reload firewalld so rules persist
+#####################################################################
+
+- name: Reload firewalld to apply rules
+  ansible.posix.firewalld:
     state: reloaded
+
