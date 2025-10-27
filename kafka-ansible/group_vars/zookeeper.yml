@@ -1,0 +1,4 @@
+zookeeper_servers: |
+  server.1=SYSVMTCRXKFKB1:2888:3888
+  server.2=SYSVMTCRXKFKB2:2888:3888
+  server.3=SYSVMTCRXKFKB3:2888:3888

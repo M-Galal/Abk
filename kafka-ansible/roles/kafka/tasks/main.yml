@@ -1,0 +1,75 @@
+---
+- name: Download Kafka tarball (if not exists)
+  ansible.builtin.get_url:
+    url: "{{ kafka_tgz_url }}"
+    dest: "/tmp/kafka.tgz"
+    mode: "0644"
+  when: not (kafka_dir is exists)
+
+- name: Ensure install dir exists
+  ansible.builtin.file:
+    path: "{{ install_dir }}"
+    state: directory
+    mode: "0755"
+
+- name: Extract Kafka
+  ansible.builtin.unarchive:
+    src: "/tmp/kafka.tgz"
+    dest: "{{ install_dir }}"
+    remote_src: true
+    creates: "{{ kafka_dir }}"
+
+- name: Symlink /opt/kafka -> versioned dir
+  ansible.builtin.file:
+    src: "{{ kafka_dir }}"
+    dest: "{{ kafka_symlink }}"
+    state: link
+    force: true
+
+- name: Create PKCS12 keystore
+  ansible.builtin.command: >
+    openssl pkcs12 -export
+    -in {{ certs_dir }}/{{ inventory_hostname }}.crt
+    -inkey {{ certs_dir }}/{{ inventory_hostname }}.key
+    -certfile {{ ca_crt_path }}
+    -out {{ certs_dir }}/{{ inventory_hostname }}.p12
+    -passout pass:changeit
+  args:
+    creates: "{{ certs_dir }}/{{ inventory_hostname }}.p12"
+
+- name: Create truststore
+  ansible.builtin.command: >
+    openssl pkcs12 -export
+    -in {{ ca_crt_path }}
+    -nokeys
+    -out {{ certs_dir }}/truststore.p12
+    -passout pass:changeit
+  args:
+    creates: "{{ certs_dir }}/truststore.p12"
+
+- name: Secure certs dir
+  ansible.builtin.file:
+    path: "{{ certs_dir }}"
+    mode: "0700"
+    recurse: true
+
+- name: Write Kafka server.properties
+  ansible.builtin.template:
+    src: server.properties.j2
+    dest: "{{ kafka_symlink }}/config/server.properties"
+    mode: "0644"
+
+- name: Install Kafka systemd unit
+  ansible.builtin.template:
+    src: kafka.service.j2
+    dest: /etc/systemd/system/kafka.service
+    mode: "0644"
+
+- name: systemctl daemon-reload
+  ansible.builtin.command: systemctl daemon-reload
+
+- name: Enable and start Kafka
+  ansible.builtin.service:
+    name: kafka
+    state: started
+    enabled: true

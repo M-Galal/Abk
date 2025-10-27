@@ -1,0 +1,15 @@
+[Unit]
+Description=Apache Kafka Broker
+After=network.target zookeeper.service
+
+[Service]
+Type=simple
+User=root
+Environment="KAFKA_HEAP_OPTS=-Xms1G -Xmx1G"
+ExecStart={{ kafka_symlink }}/bin/kafka-server-start.sh {{ kafka_symlink }}/config/server.properties
+ExecStop=/bin/kill -TERM $MAINPID
+Restart=on-failure
+LimitNOFILE={{ nofile_limit }}
+
+[Install]
+WantedBy=multi-user.target

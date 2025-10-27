@@ -1,0 +1,24 @@
+---
+- hosts: all
+  become: true
+  gather_facts: true
+
+  handlers:
+    - name: Reload sysctl
+      ansible.builtin.command: sysctl --system
+
+  roles:
+    - role: common
+    - role: tls
+
+- hosts: zookeeper
+  become: true
+  gather_facts: false
+  roles:
+    - role: zookeeper
+
+- hosts: kafka
+  become: true
+  gather_facts: false
+  roles:
+    - role: kafka

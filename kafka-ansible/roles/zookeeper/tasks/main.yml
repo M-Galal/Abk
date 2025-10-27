@@ -1,0 +1,54 @@
+---
+- name: Download Kafka tarball
+  ansible.builtin.get_url:
+    url: "{{ kafka_tgz_url }}"
+    dest: "/tmp/kafka.tgz"
+    mode: "0644"
+  when: not (kafka_dir is exists)
+
+- name: Ensure install dir exists
+  ansible.builtin.file:
+    path: "{{ install_dir }}"
+    state: directory
+    mode: "0755"
+
+- name: Extract Kafka
+  ansible.builtin.unarchive:
+    src: "/tmp/kafka.tgz"
+    dest: "{{ install_dir }}"
+    remote_src: true
+    creates: "{{ kafka_dir }}"
+
+- name: Symlink /opt/kafka -> versioned dir
+  ansible.builtin.file:
+    src: "{{ kafka_dir }}"
+    dest: "{{ kafka_symlink }}"
+    state: link
+    force: true
+
+- name: Write ZooKeeper config
+  ansible.builtin.template:
+    src: zoo.cfg.j2
+    dest: "{{ kafka_symlink }}/config/zookeeper.properties"
+    mode: "0644"
+
+- name: Write myid
+  ansible.builtin.template:
+    src: myid.j2
+    dest: "{{ zookeeper_data_dir }}/myid"
+    mode: "0644"
+
+- name: Install systemd unit
+  ansible.builtin.template:
+    src: zookeeper.service.j2
+    dest: /etc/systemd/system/zookeeper.service
+    mode: "0644"
+
+- name: systemctl daemon-reload
+  ansible.builtin.command: systemctl daemon-reload
+
+- name: Enable and start ZooKeeper
+  ansible.builtin.service:
+    name: zookeeper
+    state: started
+    enabled: true

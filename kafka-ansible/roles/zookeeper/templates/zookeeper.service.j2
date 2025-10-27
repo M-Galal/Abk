@@ -1,0 +1,14 @@
+[Unit]
+Description=Apache ZooKeeper
+After=network.target
+
+[Service]
+Type=simple
+User=root
+ExecStart={{ kafka_symlink }}/bin/zookeeper-server-start.sh {{ kafka_symlink }}/config/zookeeper.properties
+ExecStop=/bin/kill -TERM $MAINPID
+Restart=on-failure
+LimitNOFILE={{ nofile_limit }}
+
+[Install]
+WantedBy=multi-user.target

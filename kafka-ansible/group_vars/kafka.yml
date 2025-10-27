@@ -1,0 +1,6 @@
+kafka_cluster_id: "my-cluster"
+kafka_replication_factor: 3
+kafka_min_insync_replicas: 2
+
+kafka_listeners: "SSL://0.0.0.0:{{ kafka_tls_port }}"
+kafka_advertised_listener_protocol: "SSL"

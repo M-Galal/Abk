@@ -1,0 +1,100 @@
+---
+- name: Ensure required packages are installed
+  ansible.builtin.yum:
+    name:
+      - "{{ java_package }}"
+      - tar
+      - firewalld
+      - policycoreutils-python-utils
+    state: present
+
+- name: Enable and start firewalld
+  ansible.builtin.service:
+    name: firewalld
+    state: started
+    enabled: true
+
+- name: Create data and log directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  loop:
+    - "{{ zookeeper_data_dir }}"
+    - "{{ zookeeper_log_dir }}"
+    - "{{ kafka_data_dir }}"
+    - "{{ kafka_log_dir }}"
+    - "{{ certs_dir }}"
+
+- name: Apply sysctl tuning file
+  ansible.builtin.copy:
+    dest: /etc/sysctl.d/kafka-tuning.conf
+    mode: "0644"
+    content: |
+      {% for key, val in sysctl_settings.items() %}
+      {{ key }} = {{ val }}
+      {% endfor %}
+  notify: Reload sysctl
+
+- name: Set limits for Kafka and ZooKeeper processes
+  ansible.builtin.copy:
+    dest: /etc/security/limits.d/kafka.conf
+    mode: "0644"
+    content: |
+      * soft nofile {{ nofile_limit }}
+      * hard nofile {{ nofile_limit }}
+      * soft nproc  {{ nproc_limit }}
+      * hard nproc  {{ nproc_limit }}
+
+- name: Ensure SELinux is enforcing
+  ansible.posix.selinux:
+    state: "{{ selinux_state }}"
+
+- name: Define SELinux fcontext for Kafka and ZooKeeper data/log dirs
+  ansible.builtin.command: >
+    semanage fcontext -a -t var_lib_t '{{ item }}(/.*)?'
+  args:
+    warn: false
+  register: semanage_result
+  changed_when: semanage_result.rc == 0
+  failed_when: semanage_result.rc not in [0,1]
+  loop:
+    - "{{ zookeeper_data_dir }}"
+    - "{{ zookeeper_log_dir }}"
+    - "{{ kafka_data_dir }}"
+    - "{{ kafka_log_dir }}"
+
+- name: Restore SELinux context on Kafka/ZooKeeper data/log dirs
+  ansible.builtin.command: "restorecon -Rv {{ item }}"
+  loop:
+    - "{{ zookeeper_data_dir }}"
+    - "{{ zookeeper_log_dir }}"
+    - "{{ kafka_data_dir }}"
+    - "{{ kafka_log_dir }}"
+
+- name: Open ZooKeeper firewall ports on ZooKeeper nodes
+  ansible.posix.firewalld:
+    port: "{{ item }}"
+    permanent: true
+    state: enabled
+    immediate: true
+  loop: "{{ firewalld_zookeeper_ports }}"
+  when: "'zookeeper' in group_names"
+
+- name: Open Kafka firewall ports on Kafka nodes
+  ansible.posix.firewalld:
+    port: "{{ item }}"
+    permanent: true
+    state: enabled
+    immediate: true
+  loop: "{{ firewalld_kafka_ports }}"
+  when: "'kafka' in group_names"
+
+- name: Reload firewalld to ensure rules are applied
+  ansible.builtin.command: firewall-cmd --reload
+  changed_when: false
+
+- name: Flush handlers
+  ansible.builtin.meta: flush_handlers

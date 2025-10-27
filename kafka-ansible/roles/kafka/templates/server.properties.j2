@@ -1,0 +1,36 @@
+broker.id={{ hostvars[inventory_hostname].broker_id }}
+
+listeners={{ kafka_listeners }}
+advertised.listeners={{ kafka_advertised_listener_protocol }}://{{ ansible_host }}:{{ kafka_tls_port }}
+listener.security.protocol.map=SSL:SSL
+inter.broker.listener.name=SSL
+
+num.network.threads=3
+num.io.threads=8
+socket.send.buffer.bytes=102400
+socket.receive.buffer.bytes=102400
+socket.request.max.bytes=104857600
+
+log.dirs={{ kafka_data_dir }}
+num.partitions=3
+num.recovery.threads.per.data.dir=1
+offsets.topic.replication.factor={{ kafka_replication_factor }}
+transaction.state.log.replication.factor={{ kafka_replication_factor }}
+transaction.state.log.min.isr={{ kafka_min_insync_replicas }}
+min.insync.replicas={{ kafka_min_insync_replicas }}
+default.replication.factor={{ kafka_replication_factor }}
+
+zookeeper.connect={% for host in groups['zookeeper'] %}
+{{ hostvars[host].ansible_host }}:{{ zookeeper_client_port }}{% if not loop.last %},{% endif %}{% endfor %}
+zookeeper.connection.timeout.ms=18000
+
+ssl.keystore.location={{ certs_dir }}/{{ inventory_hostname }}.p12
+ssl.keystore.password=changeit
+ssl.key.password=changeit
+ssl.truststore.location={{ certs_dir }}/truststore.p12
+ssl.truststore.password=changeit
+ssl.client.auth=none
+security.inter.broker.protocol=SSL
+ssl.endpoint.identification.algorithm=
+
+auto.create.topics.enable=true
