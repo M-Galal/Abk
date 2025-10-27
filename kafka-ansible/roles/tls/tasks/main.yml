@@ -7,10 +7,14 @@
     group: root
     mode: "0700"
 
+# Pick first Kafka host as Certificate Authority master
 - name: Set CA host
   ansible.builtin.set_fact:
     ca_master: "{{ groups['kafka'][0] }}"
 
+########################################################
+# CA generation (run once on ca_master)
+########################################################
 - name: Generate CA key (only on ca_master)
   ansible.builtin.command: >
     openssl genrsa -out {{ ca_key_path }} 4096
@@ -31,6 +35,9 @@
   delegate_to: "{{ ca_master }}"
   run_once: true
 
+########################################################
+# Pull CA locally (control node) then push CA to everyone
+########################################################
 - name: Fetch CA cert to control node
   ansible.builtin.fetch:
     src: "{{ ca_crt_path }}"
@@ -55,7 +62,8 @@
     group: root
     mode: "0644"
 
-- name: Copy CA key to ca_master only (for CSR signing later)
+# Only ca_master keeps the CA private key
+- name: Copy CA key to ca_master only
   ansible.builtin.copy:
     src: "ca-key.pem"
     dest: "{{ ca_key_path }}"
@@ -64,6 +72,9 @@
     mode: "0600"
   when: inventory_hostname == ca_master
 
+########################################################
+# Per-host key + CSR
+########################################################
 - name: Generate private key for this host
   ansible.builtin.command: >
     openssl genrsa -out {{ certs_dir }}/{{ inventory_hostname }}.key 2048
@@ -79,7 +90,26 @@
   args:
     creates: "{{ certs_dir }}/{{ inventory_hostname }}.csr"
 
-- name: Sign cert for this host (run on ca_master, then fetch back)
+########################################################
+# Copy CSR to control node, then to ca_master, sign it
+########################################################
+# pull CSR from THIS host to control node
+- name: Fetch CSR to control node
+  ansible.builtin.fetch:
+    src: "{{ certs_dir }}/{{ inventory_hostname }}.csr"
+    dest: "csrs/{{ inventory_hostname }}.csr"
+    flat: true
+
+# push CSR from control node to ca_master
+- name: Copy CSR to ca_master
+  ansible.builtin.copy:
+    src: "csrs/{{ inventory_hostname }}.csr"
+    dest: "{{ certs_dir }}/{{ inventory_hostname }}.csr"
+    mode: "0644"
+  delegate_to: "{{ ca_master }}"
+
+# sign cert on ca_master using that CSR
+- name: Sign cert for this host on ca_master
   ansible.builtin.command: >
     openssl x509 -req
     -in {{ certs_dir }}/{{ inventory_hostname }}.csr
@@ -91,16 +121,19 @@
     -sha256
   delegate_to: "{{ ca_master }}"
 
-- name: Fetch signed cert back to controller
+########################################################
+# Get signed cert back to control node, then to host
+########################################################
+- name: Fetch signed cert from ca_master to control node
   ansible.builtin.fetch:
     src: "{{ certs_dir }}/{{ inventory_hostname }}.crt"
-    dest: "{{ inventory_hostname }}.crt"
+    dest: "certs/{{ inventory_hostname }}.crt"
     flat: true
   delegate_to: "{{ ca_master }}"
 
 - name: Copy signed cert to node
   ansible.builtin.copy:
-    src: "{{ inventory_hostname }}.crt"
+    src: "certs/{{ inventory_hostname }}.crt"
     dest: "{{ certs_dir }}/{{ inventory_hostname }}.crt"
     mode: "0644"
     owner: root
