@@ -51,6 +51,7 @@
 - name: Ensure SELinux is enforcing
   ansible.posix.selinux:
     state: "{{ selinux_state }}"
+    policy: targeted
 
 - name: Define SELinux fcontext for Kafka and ZooKeeper data/log dirs
   ansible.builtin.command: >
