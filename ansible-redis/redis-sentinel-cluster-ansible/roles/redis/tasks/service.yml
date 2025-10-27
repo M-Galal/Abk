@@ -1,15 +1,28 @@
 ---
-- systemd:
+# Anytime we change or add unit files, reload systemd
+- name: Reload systemd units
+  ansible.builtin.systemd:
     daemon_reload: yes
 
-- systemd:
+########################################
+# Enable/start Redis on data nodes
+########################################
+- name: Enable and start redis.service
+  ansible.builtin.systemd:
     name: "{{ redis_service_name }}"
     state: started
     enabled: yes
-  when: role_mode == "server"
+  when:
+    - role_mode == "server" or (deploy_redis | default(false) | bool)
 
-- systemd:
+########################################
+# Enable/start redis-sentinel.service on sentinel nodes
+########################################
+- name: Enable and start redis-sentinel.service
+  ansible.builtin.systemd:
     name: "{{ sentinel_service_name }}"
     state: started
     enabled: yes
-  when: role_mode == "sentinel"
+  when:
+    - role_mode == "sentinel" or (deploy_sentinel | default(false) | bool)
+

@@ -1,13 +1,85 @@
 ---
-- set_fact:
+# Figure out if this host is the designated master
+- name: Determine if this node is master
+  ansible.builtin.set_fact:
     is_master: "{{ (inventory_hostname == redis_master_host) | bool }}"
 
-- template:
+########################################
+# redis.conf for data nodes
+########################################
+- name: Create redis.conf
+  ansible.builtin.template:
     src: redis.conf.j2
     dest: "{{ redis_conf_path }}"
-  when: role_mode == "server" or (deploy_redis | default(false) | bool)
+    owner: "{{ redis_user }}"
+    group: "{{ redis_group }}"
+    mode: '0640'
+  when:
+    - role_mode == "server" or (deploy_redis | default(false) | bool)
 
-- template:
+########################################
+# sentinel.conf for sentinel nodes
+########################################
+- name: Create sentinel.conf
+  ansible.builtin.template:
     src: sentinel.conf.j2
     dest: "{{ sentinel_conf_path }}"
-  when: role_mode == "sentinel" or (deploy_sentinel | default(false) | bool)
+    owner: "{{ redis_user }}"
+    group: "{{ redis_group }}"
+    mode: '0640'
+  when:
+    - role_mode == "sentinel" or (deploy_sentinel | default(false) | bool)
+
+########################################
+# systemd unit for Redis server
+########################################
+- name: Install systemd unit for redis.service
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/{{ redis_service_name }}.service
+    owner: root
+    group: root
+    mode: '0644'
+    content: |
+      [Unit]
+      Description=Redis In-Memory Data Store
+      After=network.target
+
+      [Service]
+      User={{ redis_user }}
+      Group={{ redis_group }}
+      ExecStart=/usr/bin/redis-server {{ redis_conf_path }} --supervised systemd
+      ExecStop=/usr/bin/redis-cli -a {{ redis_requirepass }} shutdown
+      Restart=always
+      LimitNOFILE=10032
+
+      [Install]
+      WantedBy=multi-user.target
+  when:
+    - role_mode == "server" or (deploy_redis | default(false) | bool)
+
+########################################
+# systemd unit for redis-sentinel.service
+########################################
+- name: Install systemd unit for redis-sentinel.service
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/{{ sentinel_service_name }}.service
+    owner: root
+    group: root
+    mode: '0644'
+    content: |
+      [Unit]
+      Description=Redis Sentinel
+      After=network.target
+
+      [Service]
+      User={{ redis_user }}
+      Group={{ redis_group }}
+      ExecStart=/usr/bin/redis-sentinel {{ sentinel_conf_path }} --supervised systemd
+      Restart=always
+      LimitNOFILE=10032
+
+      [Install]
+      WantedBy=multi-user.target
+  when:
+    - role_mode == "sentinel" or (deploy_sentinel | default(false) | bool)
+
