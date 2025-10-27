@@ -53,25 +53,27 @@
     state: "{{ selinux_state }}"
     policy: targeted
 
-- name: Declare SELinux context for ZooKeeper/Kafka data/log dirs
-  ansible.posix.sefcontext:
-    target: "{{ item }}(/.*)?"
-    setype: var_lib_t
-    state: present
+- name: Define SELinux fcontext for Kafka and ZooKeeper data/log dirs
+  ansible.builtin.command: >
+    semanage fcontext -a -t var_lib_t '{{ item }}(/.*)?'
+  args:
+    warn: false
+  register: semanage_result
+  changed_when: semanage_result.rc == 0
+  failed_when: semanage_result.rc not in [0,1]
   loop:
     - "{{ zookeeper_data_dir }}"
     - "{{ zookeeper_log_dir }}"
     - "{{ kafka_data_dir }}"
     - "{{ kafka_log_dir }}"
 
-- name: Restore SELinux context on ZooKeeper/Kafka data/log dirs
+- name: Restore SELinux context on Kafka/ZooKeeper data/log dirs
   ansible.builtin.command: "restorecon -Rv {{ item }}"
   loop:
     - "{{ zookeeper_data_dir }}"
     - "{{ zookeeper_log_dir }}"
     - "{{ kafka_data_dir }}"
     - "{{ kafka_log_dir }}"
-  changed_when: false
 
 - name: Open ZooKeeper firewall ports on ZooKeeper nodes
   ansible.posix.firewalld:
@@ -97,4 +99,3 @@
 
 - name: Flush handlers
   ansible.builtin.meta: flush_handlers
-
