@@ -72,9 +72,9 @@ rabbitmq_ha_policy_priority: 0
 
 # === TLS (optional) ===
 rabbitmq_enable_tls: false
-rabbitmq_tls_cacertfile: "/etc/rabbitmq/ssl/ca.pem"
-rabbitmq_tls_certfile: "/etc/rabbitmq/ssl/cert.pem"
-rabbitmq_tls_keyfile: "/etc/rabbitmq/ssl/key.pem"
+rabbitmq_tls_cacertfile: "/etc/rabbitmq/ssl/ca-abk.crt"
+rabbitmq_tls_certfile: "/etc/rabbitmq/ssl/abk-wildcard.crt"
+rabbitmq_tls_keyfile: "/etc/rabbitmq/ssl/abk-wildcard.key"
 
 # === System tuning ===
 rabbitmq_file_descriptors: 65536

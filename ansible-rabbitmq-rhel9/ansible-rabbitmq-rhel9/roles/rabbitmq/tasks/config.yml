@@ -39,6 +39,43 @@
       rabbitmq soft nofile {{ rabbitmq_file_descriptors }}
       rabbitmq hard nofile {{ rabbitmq_file_descriptors }}
 
+- name: "Set RabbitMQ TLS paths"
+  vars:
+    rabbitmq_ssl_dir: /etc/rabbitmq/ssl
+    rabbitmq_cert_src_dir: "tls"  # relative to role's files/
+  block:
+
+    - name: "Ensure RabbitMQ SSL directory exists"
+      ansible.builtin.file:
+        path: "{{ rabbitmq_ssl_dir }}"
+        state: directory
+        owner: root
+        group: root
+        mode: "0750"
+
+    - name: "Copy CA certificate to server"
+      ansible.builtin.copy:
+        src: "{{ rabbitmq_cert_src_dir }}/ca-abk.crt"
+        dest: "{{ rabbitmq_ssl_dir }}/ca-abk.crt"
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: "Copy wildcard certificate to server"
+      ansible.builtin.copy:
+        src: "{{ rabbitmq_cert_src_dir }}/abk-wildcard.crt"
+        dest: "{{ rabbitmq_ssl_dir }}/abk-wildcard.crt"
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: "Copy wildcard private key to server"
+      ansible.builtin.copy:
+        src: "{{ rabbitmq_cert_src_dir }}/abk-wildcard.key"
+        dest: "{{ rabbitmq_ssl_dir }}/abk-wildcard.key"
+        owner: root
+        group: root
+        mode: "0600"
 - name: Deploy rabbitmq.conf
   template:
     src: rabbitmq.conf.j2
