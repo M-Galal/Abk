@@ -1,0 +1,15 @@
+# site.yml
+- name: Redis + Sentinel with TLS
+  hosts: redis
+  become: true
+  vars_files:
+    - inventory/group_vars/redis.yml
+
+  pre_tasks:
+    - name: Ensure required facts
+      setup:
+
+  roles:
+    - pki
+    - redis
+    - sentinel

@@ -1,0 +1,94 @@
+# roles/redis/tasks/main.yml
+- name: Install packages (Debian)
+  apt:
+    name: "{{ redis_packages_debian }}"
+    state: present
+    update_cache: true
+  when: ansible_os_family == "Debian"
+
+- name: Install packages (RedHat)
+  yum:
+    name: "{{ redis_packages_redhat }}"
+    state: present
+  when: ansible_os_family == "RedHat"
+
+- name: Ensure directories
+  file:
+    path: "{{ item.path }}"
+    state: directory
+    owner: "{{ item.owner | default(redis_user) }}"
+    group: "{{ item.group | default(redis_group) }}"
+    mode: "{{ item.mode | default('0750') }}"
+  loop:
+    - { path: "{{ redis_conf_dir }}" }
+    - { path: "{{ redis_data_dir }}", mode: "0750" }
+    - { path: "{{ redis_log_dir }}", mode: "0755" }
+
+- name: Tune sysctl overcommit_memory
+  sysctl:
+    name: vm.overcommit_memory
+    value: "{{ redis_overcommit_memory }}"
+    state: present
+
+- name: Tune swappiness
+  sysctl:
+    name: vm.swappiness
+    value: "{{ redis_vm_swappiness }}"
+    state: present
+
+- name: Systemd NOFILE override
+  file:
+    path: "/etc/systemd/system/redis.service.d"
+    state: directory
+    mode: "0755"
+
+- name: Place systemd override
+  copy:
+    src: "files/redis.service.d/override.conf"
+    dest: "/etc/systemd/system/redis.service.d/override.conf"
+    mode: "0644"
+  notify: Restart redis
+
+- name: Template redis.conf
+  template:
+    src: "templates/redis.conf.j2"
+    dest: "{{ redis_conf_dir }}/redis.conf"
+    owner: "{{ redis_user }}"
+    group: "{{ redis_group }}"
+    mode: "0644"
+  notify: Restart redis
+
+- name: Enable and start redis
+  systemd:
+    name: redis
+    enabled: true
+    state: started
+
+- name: Configure replica role (non-master)
+  when: inventory_hostname != redis_master_host
+  block:
+    - name: Configure replicaof via redis-cli (idempotent)
+      command: >
+        redis-cli -h {{ inventory_hostname }} -p {{ redis_port }}
+        --tls --cacert {{ redis_tls_dir }}/ca.crt
+        --cert {{ redis_tls_dir }}/server.crt
+        --key {{ redis_tls_dir }}/server.key
+        -a {{ redis_requirepass }}
+        CONFIG SET replicaof {{ hostvars[redis_master_host].ansible_host | default(redis_master_host) }} {{ redis_port }}
+      changed_when: false
+
+    - name: Set masterauth runtime
+      command: >
+        redis-cli -h {{ inventory_hostname }} -p {{ redis_port }}
+        --tls --cacert {{ redis_tls_dir }}/ca.crt
+        --cert {{ redis_tls_dir }}/server.crt
+        --key {{ redis_tls_dir }}/server.key
+        -a {{ redis_requirepass }}
+        CONFIG SET masterauth {{ redis_masterauth }}
+      changed_when: false
+
+handlers:
+  - name: Restart redis
+    systemd:
+      name: redis
+      state: restarted

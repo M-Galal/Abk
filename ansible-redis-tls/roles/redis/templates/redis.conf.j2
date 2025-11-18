@@ -1,0 +1,46 @@
+# Network
+bind 0.0.0.0
+protected-mode yes
+
+# Ports: disable plaintext, enable TLS
+port 0
+tls-port {{ redis_port }}
+
+# TLS configuration
+tls-cert-file {{ redis_tls_dir }}/server.crt
+tls-key-file {{ redis_tls_dir }}/server.key
+tls-ca-cert-file {{ redis_tls_dir }}/ca.crt
+tls-auth-clients yes
+tls-replication yes
+tls-cluster yes
+tls-protocols "TLSv1.2 TLSv1.3"
+tls-ciphers "HIGH:!aNULL:!MD5"
+tls-ciphersuites "TLS_AES_256_GCM_SHA384:TLS_CHACHA20_POLY1305_SHA256:TLS_AES_128_GCM_SHA256"
+
+# Persistence
+dir {{ redis_data_dir }}
+dbfilename dump.rdb
+appendonly yes
+appendfilename "appendonly.aof"
+appendfsync everysec
+
+# Logging
+loglevel notice
+logfile "{{ redis_log_dir }}/redis.log"
+
+# Memory and performance
+save 900 1
+save 300 10
+save 60 10000
+maxclients 10000
+tcp-keepalive 300
+
+# Security
+requirepass {{ redis_requirepass }}
+masterauth {{ redis_masterauth }}
+
+# ACL for replica user (optional stricter control)
+user default on >{{ redis_requirepass }} ~* &* +@all
+user {{ redis_acl_replica_user }} on >{{ redis_acl_replica_pass }} ~* &* +psync +replconf +ping +client +hello
+
+# Replication role is handled at runtime via CONFIG SET in Ansible

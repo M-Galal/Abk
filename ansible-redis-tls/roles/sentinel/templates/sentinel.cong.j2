@@ -1,0 +1,31 @@
+# Basic
+port {{ sentinel_port }}
+bind 0.0.0.0
+daemonize no
+protected-mode yes
+logfile "{{ redis_log_dir }}/sentinel.log"
+
+# Monitor the master (by IP/FQDN if needed)
+sentinel monitor {{ sentinel_monitored_name }} {{ hostvars[redis_master_host].ansible_host | default(redis_master_host) }} {{ redis_port }} {{ sentinel_quorum }}
+
+# Failover settings
+sentinel down-after-milliseconds {{ sentinel_monitored_name }} {{ sentinel_down_after_ms }}
+sentinel failover-timeout {{ sentinel_monitored_name }} {{ sentinel_failover_timeout }}
+sentinel parallel-syncs {{ sentinel_monitored_name }} {{ sentinel_parallel_syncs }}
+
+# Authentication
+sentinel auth-pass {{ sentinel_monitored_name }} {{ redis_masterauth }}
+
+# TLS for sentinel
+tls-port {{ sentinel_port }}
+port 0
+tls-cert-file {{ redis_tls_dir }}/server.crt
+tls-key-file {{ redis_tls_dir }}/server.key
+tls-ca-cert-file {{ redis_tls_dir }}/ca.crt
+tls-auth-clients yes
+tls-replication yes
+tls-protocols "TLSv1.2 TLSv1.3"
+tls-ciphers "HIGH:!aNULL:!MD5"
+tls-ciphersuites "TLS_AES_256_GCM_SHA384:TLS_CHACHA20_POLY1305_SHA256:TLS_AES_128_GCM_SHA256"
+
+# Note: sentinel communicates with Redis using the same TLS settings

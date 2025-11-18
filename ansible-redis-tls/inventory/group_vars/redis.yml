@@ -1,0 +1,58 @@
+# inventory/group_vars/redis.yml
+redis_version: "7.2"
+redis_user: "redis"
+redis_group: "redis"
+redis_conf_dir: "/etc/redis"
+redis_data_dir: "/var/lib/redis"
+redis_log_dir: "/var/log/redis"
+redis_tls_dir: "{{ redis_conf_dir }}/tls"
+
+# TLS / PKI
+tls_country: "KW"
+tls_org: "YourOrg"
+tls_ca_common_name: "YourOrg Redis CA"
+tls_valid_days: 3650
+tls_cert_days: 825
+tls_key_bits: 4096
+
+# Master elected as the first host in the redis group
+redis_master_host: "{{ groups['redis'][0] }}"
+redis_port: 6379
+redis_requirepass: "S3cureClientPass"      # client auth
+redis_masterauth: "S3cureReplicationPass"  # replication auth used by replicas and Sentinel
+redis_acl_replica_user: "replica"
+redis_acl_replica_pass: "{{ redis_masterauth }}"
+
+# Sentinel
+sentinel_monitored_name: "mymaster"
+sentinel_port: 26379
+sentinel_quorum: 2
+sentinel_down_after_ms: 30000
+sentinel_failover_timeout: 180000
+sentinel_parallel_syncs: 1
+
+# OS-specific packages (basic default)
+redis_packages_debian:
+  - redis-server
+  - openssl
+redis_packages_redhat:
+  - redis
+  - openssl
+
+# System tuning
+redis_overcommit_memory: 1
+redis_vm_swappiness: 1
+redis_nofile_limit: 65536
+
+# SANs per-host for TLS
+# Keep short hostnames and FQDNs or IPs as needed
+tls_sans:
+  redis1:
+    - "DNS:redis1"
+    - "IP:10.0.0.11"
+  redis2:
+    - "DNS:redis2"
+    - "IP:10.0.0.12"
+  redis3:
+    - "DNS:redis3"
+    - "IP:10.0.0.13"

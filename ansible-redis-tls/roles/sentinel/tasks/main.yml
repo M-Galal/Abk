@@ -1,0 +1,49 @@
+# roles/sentinel/tasks/main.yml
+- name: Ensure sentinel directory
+  file:
+    path: "{{ redis_conf_dir }}"
+    state: directory
+    owner: "{{ redis_user }}"
+    group: "{{ redis_group }}"
+    mode: "0750"
+
+- name: Template sentinel.conf
+  template:
+    src: "templates/sentinel.conf.j2"
+    dest: "{{ redis_conf_dir }}/sentinel.conf"
+    owner: "{{ redis_user }}"
+    group: "{{ redis_group }}"
+    mode: "0644"
+  notify: Restart sentinel
+
+- name: Create systemd unit for sentinel
+  copy:
+    dest: /etc/systemd/system/redis-sentinel.service
+    mode: "0644"
+    content: |
+      [Unit]
+      Description=Redis Sentinel
+      After=network.target
+
+      [Service]
+      User={{ redis_user }}
+      Group={{ redis_group }}
+      ExecStart=/usr/bin/redis-sentinel {{ redis_conf_dir }}/sentinel.conf
+      Restart=always
+      LimitNOFILE={{ redis_nofile_limit }}
+
+      [Install]
+      WantedBy=multi-user.target
+  notify: Restart sentinel
+
+- name: Enable and start redis-sentinel
+  systemd:
+    name: redis-sentinel
+    enabled: true
+    state: started
+
+handlers:
+  - name: Restart sentinel
+    systemd:
+      name: redis-sentinel
+      state: restarted

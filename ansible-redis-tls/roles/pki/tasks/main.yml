@@ -1,0 +1,77 @@
+# roles/pki/tasks/main.yml
+- name: Ensure TLS dir on nodes
+  file:
+    path: "{{ redis_tls_dir }}"
+    state: directory
+    owner: "{{ redis_user }}"
+    group: "{{ redis_group }}"
+    mode: "0750"
+
+- name: Generate local CA private key (on control node)
+  delegate_to: localhost
+  community.crypto.openssl_privatekey:
+    path: "{{ playbook_dir }}/pki/ca.key"
+    size: "{{ tls_key_bits }}"
+  run_once: true
+
+- name: Generate local CA certificate
+  delegate_to: localhost
+  community.crypto.openssl_certificate:
+    path: "{{ playbook_dir }}/pki/ca.crt"
+    privatekey_path: "{{ playbook_dir }}/pki/ca.key"
+    provider: selfsigned
+    subject:
+      common_name: "{{ tls_ca_common_name }}"
+      organization_name: "{{ tls_org }}"
+      country_name: "{{ tls_country }}"
+    valid_days: "{{ tls_valid_days }}"
+  run_once: true
+
+- name: Create per-host private key
+  community.crypto.openssl_privatekey:
+    path: "{{ redis_tls_dir }}/server.key"
+    size: "{{ tls_key_bits }}"
+    type: RSA
+    owner: "{{ redis_user }}"
+    group: "{{ redis_group }}"
+    mode: "0600"
+
+- name: Create CSR with SANs
+  community.crypto.openssl_csr:
+    path: "{{ redis_tls_dir }}/server.csr"
+    privatekey_path: "{{ redis_tls_dir }}/server.key"
+    common_name: "{{ inventory_hostname }}"
+    subject:
+      organization_name: "{{ tls_org }}"
+      country_name: "{{ tls_country }}"
+    owner: "{{ redis_user }}"
+    group: "{{ redis_group }}"
+    mode: "0644"
+    san: "{{ tls_sans[inventory_hostname] | default(['DNS:' + inventory_hostname]) }}"
+
+- name: Sign certificate with local CA
+  delegate_to: localhost
+  community.crypto.openssl_certificate:
+    path: "{{ playbook_dir }}/pki/{{ inventory_hostname }}.crt"
+    csr_path: "{{ hostvars[inventory_hostname]['redis_tls_dir'] }}/server.csr"
+    ownca_path: "{{ playbook_dir }}/pki/ca.crt"
+    ownca_privatekey_path: "{{ playbook_dir }}/pki/ca.key"
+    provider: ownca
+    valid_days: "{{ tls_cert_days }}"
+  register: signed_cert
+
+- name: Copy signed cert to node
+  copy:
+    src: "{{ playbook_dir }}/pki/{{ inventory_hostname }}.crt"
+    dest: "{{ redis_tls_dir }}/server.crt"
+    owner: "{{ redis_user }}"
+    group: "{{ redis_group }}"
+    mode: "0644"
+
+- name: Copy CA cert to node
+  copy:
+    src: "{{ playbook_dir }}/pki/ca.crt"
+    dest: "{{ redis_tls_dir }}/ca.crt"
+    owner: "{{ redis_user }}"
+    group: "{{ redis_group }}"
+    mode: "0644"
