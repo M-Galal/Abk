@@ -9,3 +9,25 @@ replica-read-only no
 {% else %}
 replicaof {{ hostvars[redis_master_host].ansible_host | default(redis_master_host) }} {{ redis_port }}
 {% endif %}
+{% if redis_use_tls %}
+# --- TLS configuration ---
+tls-port {{ redis_tls_port }}
+
+# Keep non-TLS port available for Sentinel/replication
+# If you want *only* TLS later, you can set "port 0"
+# and make sure Sentinel/replicas are using TLS as well.
+
+tls-cert-file {{ redis_tls_dir }}/{{ redis_tls_cert_file }}
+tls-key-file {{ redis_tls_dir }}/{{ redis_tls_key_file }}
+tls-ca-cert-file {{ redis_tls_dir }}/{{ redis_tls_ca_file }}
+
+# If you want client cert-based auth, switch to "yes"
+tls-auth-clients {{ redis_tls_auth_clients }}
+
+# Optional hardening
+tls-prefer-server-ciphers yes
+tls-protocols "TLSv1.2 TLSv1.3"
+{% endif %}
+{% if redis_requirepass | length > 0 %}
+requirepass {{ redis_requirepass }}
+{% endif %}

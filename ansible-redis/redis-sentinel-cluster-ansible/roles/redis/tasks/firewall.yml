@@ -24,6 +24,15 @@
   when:
     - role_mode == "server" or (deploy_redis | default(false) | bool)
 
+- name: Allow application/client access to Redis TCP {{ redis_tls_port }} from allowed_redis_clients_cidr
+  ansible.posix.firewalld:
+    rich_rule: 'rule family="ipv4" source address="{{ allowed_redis_clients_cidr }}" port port="{{  redis_tls_port}}" protocol="tcp" accept'
+    permanent: yes
+    state: enabled
+    immediate: yes
+  when:
+    - role_mode == "server" or (deploy_redis | default(false) | bool)
+
 - name: Allow internal cluster access to Redis TCP {{ redis_port }} from allowed_cluster_cidr
   ansible.posix.firewalld:
     rich_rule: 'rule family="ipv4" source address="{{ allowed_cluster_cidr }}" port port="{{ redis_port }}" protocol="tcp" accept'

@@ -25,3 +25,20 @@ sentinel_service_name: redis-sentinel
 
 allowed_redis_clients_cidr: "10.0.0.0/24"
 allowed_cluster_cidr: "10.1.186.0/24"
+
+redis_use_tls: true
+
+# Keep existing plain port for Sentinel/replication
+redis_port: 6379
+
+# New TLS port for clients
+redis_tls_port: 6380
+
+# Where TLS files will live on the Redis nodes
+redis_tls_dir: /etc/redis/tls
+redis_tls_cert_file: "abk-wildcard.crt"
+redis_tls_key_file: "abk-wildcard.key"
+redis_tls_ca_file: "ca-abk.crt"
+redis_requirepass: ""   # or set your password here
+redis_tls_auth_clients: "no"  # "yes" if you want client cert auth
+

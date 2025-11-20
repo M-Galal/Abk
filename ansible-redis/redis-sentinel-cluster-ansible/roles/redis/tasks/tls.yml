@@ -1,0 +1,35 @@
+- name: "Create TLS directory for Redis"
+  file:
+    path: "{{ redis_tls_dir }}"
+    state: directory
+    owner: redis
+    group: redis
+    mode: '0700'
+  when: redis_use_tls
+
+- name: "Copy Redis TLS CA certificate"
+  copy:
+    src: "files/tls/{{ redis_tls_ca_file }}"
+    dest: "{{ redis_tls_dir }}/{{ redis_tls_ca_file }}"
+    owner: redis
+    group: redis
+    mode: '0644'
+  when: redis_use_tls
+
+- name: "Copy Redis TLS server certificate"
+  copy:
+    src: "files/tls/{{ redis_tls_cert_file }}"
+    dest: "{{ redis_tls_dir }}/{{ redis_tls_cert_file }}"
+    owner: redis
+    group: redis
+    mode: '0644'
+  when: redis_use_tls
+
+- name: "Copy Redis TLS server private key"
+  copy:
+    src: "files/tls/{{ redis_tls_key_file }}"
+    dest: "{{ redis_tls_dir }}/{{ redis_tls_key_file }}"
+    owner: redis
+    group: redis
+    mode: '0600'
+  when: redis_use_tls

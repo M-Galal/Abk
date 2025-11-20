@@ -13,7 +13,7 @@
     dest: "{{ redis_conf_path }}"
     owner: "{{ redis_user }}"
     group: "{{ redis_group }}"
-    mode: '0640'
+    mode: '0644444'
   when:
     - role_mode == "server" or (deploy_redis | default(false) | bool)
 
@@ -26,7 +26,7 @@
     dest: "{{ sentinel_conf_path }}"
     owner: "{{ redis_user }}"
     group: "{{ redis_group }}"
-    mode: '0640'
+    mode: '0644'
   when:
     - role_mode == "sentinel" or (deploy_sentinel | default(false) | bool)
 
