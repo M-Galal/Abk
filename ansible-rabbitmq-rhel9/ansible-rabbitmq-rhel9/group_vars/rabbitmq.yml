@@ -71,7 +71,7 @@ rabbitmq_ha_policy_definition: '{"ha-mode":"all","ha-sync-mode":"automatic"}'
 rabbitmq_ha_policy_priority: 0
 
 # === TLS (optional) ===
-rabbitmq_enable_tls: false
+rabbitmq_enable_tls: true 
 rabbitmq_tls_cacertfile: "/etc/rabbitmq/ssl/ca-abk.crt"
 rabbitmq_tls_certfile: "/etc/rabbitmq/ssl/abk-wildcard.crt"
 rabbitmq_tls_keyfile: "/etc/rabbitmq/ssl/abk-wildcard.key"

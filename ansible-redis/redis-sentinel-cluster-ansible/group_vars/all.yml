@@ -5,15 +5,15 @@ redis_requirepass: "Str0ngRedisPass!"
 redis_masterauth: "Str0ngRedisPass!"
 sentinel_auth_pass: "Str0ngRedisPass!"
 
-redis_master_host: "SYSVMTCRXRDSM1"
+redis_master_host: "SYSVMTCRXRDSM7"
 redis_quorum: 2
 failover_timeout_ms: 10000
 
 redis_conf_path: /etc/redis.conf
 sentinel_conf_path: /etc/redis-sentinel.conf
 redis_dir: /var/lib/redis
-redis_log: /var/log/redis.log
-sentinel_log: /var/log/redis-sentinel.log
+redis_log: /var/log/redis/redis.log
+sentinel_log: /var/log/redis/redis-sentinel.log
 redis_user: redis
 redis_group: redis
 

@@ -51,7 +51,7 @@
         state: directory
         owner: root
         group: root
-        mode: "0750"
+        mode: "0755"
 
     - name: "Copy CA certificate to server"
       ansible.builtin.copy:
@@ -75,7 +75,7 @@
         dest: "{{ rabbitmq_ssl_dir }}/abk-wildcard.key"
         owner: root
         group: root
-        mode: "0600"
+        mode: "0644"
 - name: Deploy rabbitmq.conf
   template:
     src: rabbitmq.conf.j2
