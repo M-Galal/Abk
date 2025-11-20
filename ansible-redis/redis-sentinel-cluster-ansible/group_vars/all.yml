@@ -12,6 +12,7 @@ failover_timeout_ms: 10000
 redis_conf_path: /etc/redis.conf
 sentinel_conf_path: /etc/redis-sentinel.conf
 redis_dir: /var/lib/redis
+redis_etc_dir: /etc/redis
 redis_log: /var/log/redis/redis.log
 sentinel_log: /var/log/redis/redis-sentinel.log
 redis_user: redis
@@ -39,6 +40,6 @@ redis_tls_dir: /etc/redis/tls
 redis_tls_cert_file: "abk-wildcard.crt"
 redis_tls_key_file: "abk-wildcard.key"
 redis_tls_ca_file: "ca-abk.crt"
-redis_requirepass: ""   # or set your password here
-redis_tls_auth_clients: "no"  # "yes" if you want client cert auth
+redis_requirepass: "Str0ngRedisPass!"   # or set your password here
+redis_tls_auth_clients: "yes"  # "yes" if you want client cert auth
 

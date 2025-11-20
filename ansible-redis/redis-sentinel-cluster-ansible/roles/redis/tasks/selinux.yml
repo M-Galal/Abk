@@ -10,3 +10,11 @@
 
 - command: "restorecon -Rv {{ redis_dir }}"
   changed_when: false
+
+- community.general.sefcontext:
+    target: "{{ redis_etc_dir }}(/.*)?"
+    setype: etc_t 
+    state: present
+
+- command: "restorecon -Rv {{ redis_etc_dir }}"
+  changed_when: false

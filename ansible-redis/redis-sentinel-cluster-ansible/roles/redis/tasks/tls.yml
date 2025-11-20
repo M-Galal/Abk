@@ -4,7 +4,7 @@
     state: directory
     owner: redis
     group: redis
-    mode: '0700'
+    mode: '0755'
   when: redis_use_tls
 
 - name: "Copy Redis TLS CA certificate"
@@ -13,7 +13,7 @@
     dest: "{{ redis_tls_dir }}/{{ redis_tls_ca_file }}"
     owner: redis
     group: redis
-    mode: '0644'
+    mode: '0755'
   when: redis_use_tls
 
 - name: "Copy Redis TLS server certificate"
@@ -22,7 +22,7 @@
     dest: "{{ redis_tls_dir }}/{{ redis_tls_cert_file }}"
     owner: redis
     group: redis
-    mode: '0644'
+    mode: '0755'
   when: redis_use_tls
 
 - name: "Copy Redis TLS server private key"
@@ -31,5 +31,5 @@
     dest: "{{ redis_tls_dir }}/{{ redis_tls_key_file }}"
     owner: redis
     group: redis
-    mode: '0600'
+    mode: '0755'
   when: redis_use_tls
