@@ -2,7 +2,7 @@
 # Figure out if this host is the designated master
 - name: Determine if this node is master
   ansible.builtin.set_fact:
-    is_master: "{{ (inventory_hostname == redis_master_host) | bool }}"
+    is_master: "{{ (inventory_hostname == hostvars[master_host] ) | bool }}"
 
 ########################################
 # redis.conf for data nodes
@@ -13,7 +13,7 @@
     dest: "{{ redis_conf_path }}"
     owner: "{{ redis_user }}"
     group: "{{ redis_group }}"
-    mode: '0644444'
+    mode: '0644'
   when:
     - role_mode == "server" or (deploy_redis | default(false) | bool)
 

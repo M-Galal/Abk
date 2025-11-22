@@ -2,8 +2,8 @@
   file:
     path: "{{ redis_tls_dir }}"
     state: directory
-    owner: redis
-    group: redis
+    owner: root 
+    group: root 
     mode: '0755'
   when: redis_use_tls
 
@@ -11,8 +11,8 @@
   copy:
     src: "files/tls/{{ redis_tls_ca_file }}"
     dest: "{{ redis_tls_dir }}/{{ redis_tls_ca_file }}"
-    owner: redis
-    group: redis
+    owner: root 
+    group: root 
     mode: '0755'
   when: redis_use_tls
 
@@ -20,8 +20,8 @@
   copy:
     src: "files/tls/{{ redis_tls_cert_file }}"
     dest: "{{ redis_tls_dir }}/{{ redis_tls_cert_file }}"
-    owner: redis
-    group: redis
+    owner: root 
+    group: root 
     mode: '0755'
   when: redis_use_tls
 
@@ -29,7 +29,7 @@
   copy:
     src: "files/tls/{{ redis_tls_key_file }}"
     dest: "{{ redis_tls_dir }}/{{ redis_tls_key_file }}"
-    owner: redis
-    group: redis
+    owner: root 
+    group: root 
     mode: '0755'
   when: redis_use_tls

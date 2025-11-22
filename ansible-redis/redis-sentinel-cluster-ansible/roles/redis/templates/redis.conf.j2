@@ -7,7 +7,9 @@ logfile {{ redis_log }}
 {% if is_master %}
 replica-read-only no
 {% else %}
-replicaof {{ hostvars[redis_master_host].ansible_host | default(redis_master_host) }} {{ redis_port }}
+{% set master_host = groups['masters'][0] %}
+{% set master_ip = hostvars[master_host].ansible_host %}
+replicaof {{ master_ip }} {{ redis_port }}
 {% endif %}
 {% if redis_use_tls %}
 # --- TLS configuration ---

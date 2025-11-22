@@ -1,7 +1,7 @@
 ---
 - ansible.posix.selinux:
     policy: targeted
-    state: enforcing
+    state: permissive 
 
 - community.general.sefcontext:
     target: "{{ redis_dir }}(/.*)?"
